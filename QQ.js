@@ -15,6 +15,15 @@ var font = {
   'color':  '000000'
 }
 
+var z = 0;
+var q = Date.now();
+q = (q - q % 1E3) / 1E3;
+q = q % 1E4 * 1E4;
+function nextMsgId() {
+    z++;
+    return q + z;
+}
+
 function sleep(milliSeconds) { 
     var startTime = new Date().getTime(); 
     while (new Date().getTime() < startTime + milliSeconds);
@@ -22,6 +31,7 @@ function sleep(milliSeconds) {
 
 var QQ = module.exports = function () {
     this.auth_options = {};
+    this.toPoll = false
 };
 
 QQ.prototype.getPtwebqq = function (url, cb) {
@@ -93,14 +103,14 @@ QQ.prototype.waitingScan = function (callback) {
                         self.loginToken(self.ptwebq, null, function (ret) {
                             if (ret.retcode === 0) {
                                 log.info('登录成功');
-                                var auth_options = {
+                                self.auth_options = {
                                     clientid: clientid,
                                     ptwebqq: self.ptwebqq,
                                     vfwebqq: self.vfwebqq,
                                     uin: ret.result.uin,
                                     psessionid: ret.result.psessionid
                                 };
-                                callback(client.get_cookies(), auth_options);
+                                callback(client.get_cookies(), self.auth_options);
                             }
                             else {
                                 log.info("登录失败");
@@ -185,6 +195,7 @@ QQ.prototype._Login = function (cookie, callback) {
                 uin: ret.result.uin,
                 psessionid: ret.result.psessionid
             };
+            self.startPoll(self.auth_options);
             callback(client.get_cookies(), self.auth_options);
         }
         else {
@@ -196,6 +207,66 @@ QQ.prototype._Login = function (cookie, callback) {
 
 QQ.prototype.getAuth = function() {
     return this.auth_options;
+};
+
+QQ.prototype.onPoll = function (aaa, cb) {
+    var params = {
+        r: JSON.stringify({
+            ptwebqq: this.auth_options.ptwebqq,
+            clientid: this.auth_options.clientid,
+            psessionid: this.auth_options.psessionid,
+            key: ""
+        })
+    };
+    client.post({
+        url: "http://d1.web2.qq.com/channel/poll2"
+    }, params, function(ret, e) {
+        cb(ret);
+    });
+};
+
+QQ.prototype.stopPoll = function () {
+    this.toPoll = false;
+};
+
+QQ.prototype.startPoll = function (auth_options) {
+    this.toPoll = true;
+    log.debug('polling...');
+    this.loopPoll(auth_options);
+};
+
+QQ.prototype.loopPoll = function (auth_options) {
+    if (!this.toPoll) return;
+    var self = this;
+    this.onPoll(auth_options, function (e) {
+        if (e.result) {
+            self.sendBuddyMsg(e.result[0].value.from_uin, 'aaa', function(){
+                log.info('回复成功');
+            });
+        }
+        setTimeout(function(){
+            self.loopPoll();
+        }, e ? 1000 : 0)
+    })
+};
+
+QQ.prototype.sendBuddyMsg = function (uin, msg, cb) {
+    var params = {
+        r: JSON.stringify({
+            to: uin,
+            face: 147,
+            content: JSON.stringify(['' + uin, ['font', font]]),
+            clientid: clientid,
+            msg_id: nextMsgId(),
+            psessionid: this.auth_options.psessionid
+        })
+    };
+    log.debug(params);
+    client.post({
+        url: 'http://d1.web2.qq.com/channel/send_buddy_msg2'
+    }, params, function(ret, e) {
+        console.log(ret);
+    });
 };
 
 QQ.prototype.Robot = function (callback) {

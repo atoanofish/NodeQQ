@@ -10,5 +10,5 @@ qq.Robot(function(cookie, info){
             fs.writeFile('./cookie.data', cookie);
         }
     });
-    console.log(qq.getAuth());
+    // console.log(qq.getAuth());
 });
