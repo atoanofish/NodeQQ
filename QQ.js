@@ -240,9 +240,13 @@ QQ.prototype.loopPoll = function (auth_options) {
     var self = this;
     this.onPoll(auth_options, function (e) {
         if (e.result) {
-            self.sendBuddyMsg(e.result[0].value.from_uin, 'aaa', function(){
-                log.info('回复成功');
-            });
+            var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + e.result[0].value.content[1];
+            client.url_get(tuling, function(err, res, data) {
+                self.sendBuddyMsg(e.result[0].value.from_uin, JSON.parse(data).text, function(){
+                    log.info('回复成功');
+                });
+            })
+            
         }
         setTimeout(function(){
             self.loopPoll();
@@ -255,7 +259,7 @@ QQ.prototype.sendBuddyMsg = function (uin, msg, cb) {
         r: JSON.stringify({
             to: uin,
             face: 147,
-            content: JSON.stringify(['' + uin, ['font', font]]),
+            content: JSON.stringify(['' + msg, ['font', font]]),
             clientid: clientid,
             msg_id: nextMsgId(),
             psessionid: this.auth_options.psessionid
