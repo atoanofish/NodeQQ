@@ -8,6 +8,7 @@
 
 ##Get Start
 ``` bash
+    npm install --save
     node app.js
 ```
 
@@ -16,4 +17,3 @@
 *  群成员私聊
 *  保存群调戏记录
 *  实现谁是卧底小游戏
-
