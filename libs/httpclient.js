@@ -94,6 +94,11 @@ var url_post = function(options, form, callback) {
         console.log(options.headers);
         console.log(postData);
     }
+    if (options.timeout) {
+        http_or_https.request(options.timeout, function(){
+
+        });
+    }
     var req = http_or_https.request(options, function(resp) {
         var res = resp;
         var body = '';

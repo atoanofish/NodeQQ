@@ -188,6 +188,12 @@ QQ.prototype._Login = function (cookie, callback) {
     this.loginToken(this.ptwebqq, null, function (ret) {
         if (ret.retcode === 0) {
             log.info('登录成功');
+            if (!ret.result) {
+                require('child_process').exec('rm -rf cookie.data')
+                self.prepareLogin(callback);
+                return;
+            }
+            
             self.auth_options = {
                 clientid: clientid,
                 ptwebqq: self.ptwebqq,
@@ -219,7 +225,8 @@ QQ.prototype.onPoll = function (aaa, cb) {
         })
     };
     client.post({
-        url: "http://d1.web2.qq.com/channel/poll2"
+        url: "http://d1.web2.qq.com/channel/poll2",
+        timeout: 65000
     }, params, function(ret, e) {
         cb(ret);
     });
@@ -239,8 +246,8 @@ QQ.prototype.loopPoll = function (auth_options) {
     if (!this.toPoll) return;
     var self = this;
     this.onPoll(auth_options, function (e) {
-        if (e.result) {
-            var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + e.result[0].value.content[1];
+        if (e && e.result) {
+            var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(e.result[0].value.content[1]);
             client.url_get(tuling, function(err, res, data) {
                 self.sendBuddyMsg(e.result[0].value.from_uin, JSON.parse(data).text, function(){
                     log.info('回复成功');
@@ -248,9 +255,10 @@ QQ.prototype.loopPoll = function (auth_options) {
             })
             
         }
-        setTimeout(function(){
-            self.loopPoll();
-        }, e ? 1000 : 0)
+        self.loopPoll();
+        // setTimeout(function(){
+        //     self.loopPoll();
+        // }, e ? 5000 : 0)
     })
 };
 
