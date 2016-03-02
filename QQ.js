@@ -319,7 +319,7 @@ QQ.prototype._onPoll = function (ret) {
         async.waterfall([
             function (next) {
                 if (item.group_code) {
-                    if (item.content[3]) {
+                    if (item.content[1] === '@robot' && item.content[3]) {
                         var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
                         client.url_get(tuling, function(err, res, info) {
                             self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
