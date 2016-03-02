@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
 var Log = require('log');
@@ -29,9 +30,33 @@ function sleep(milliSeconds) {
     while (new Date().getTime() < startTime + milliSeconds);
 };
 
+function hashU(x, K) {
+    x += "";
+    for (var N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
+    var U = ["EC", "OK"],
+    V = [];
+    V[0] = x >> 24 & 255 ^ U[0].charCodeAt(0);
+    V[1] = x >> 16 & 255 ^ U[0].charCodeAt(1);
+    V[2] = x >> 8 & 255 ^ U[1].charCodeAt(0);
+    V[3] = x & 255 ^ U[1].charCodeAt(1);
+    U = [];
+    for (T = 0; T < 8; T++) U[T] = T % 2 == 0 ? N[T >> 1] : V[T >> 1];
+    N = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+    V = "";
+    for (T = 0; T < U.length; T++) {
+        V += N[U[T] >> 4 & 15];
+        V += N[U[T] & 15]
+    }
+    return V;
+};
+
 var QQ = module.exports = function () {
     this.auth_options = {};
-    this.toPoll = false
+    this.toPoll = false;
+    this.cookie = null;
+    this.groups = {};
+    this.group_code = {};
+    this.discus = {};
 };
 
 QQ.prototype.getPtwebqq = function (url, cb) {
@@ -185,29 +210,32 @@ QQ.prototype._Login = function (cookie, callback) {
 
     client.set_cookies(cookie);
 
-    this.loginToken(this.ptwebqq, null, function (ret) {
-        if (ret.retcode === 0) {
-            log.info('登录成功');
-            if (!ret.result) {
-                require('child_process').exec('rm -rf cookie.data')
-                self.prepareLogin(callback);
-                return;
+    this.Login(this.ptwebqq, function (ret){
+        if (ret.retcode === 0) self.vfwebqq = ret.result.vfwebqq;
+        self.loginToken(self.ptwebqq, null, function (ret) {
+            if (ret.retcode === 0) {
+                log.info('登录成功');
+                if (!ret.result) {
+                    require('child_process').exec('rm -rf cookie.data')
+                    self.prepareLogin(callback);
+                    return;
+                }
+
+                self.auth_options = {
+                    clientid: clientid,
+                    ptwebqq: self.ptwebqq,
+                    vfwebqq: self.vfwebqq,
+                    uin: ret.result.uin,
+                    psessionid: ret.result.psessionid
+                };
+                self.startPoll(self.auth_options);
+                callback(client.get_cookies(), self.auth_options);
             }
-            
-            self.auth_options = {
-                clientid: clientid,
-                ptwebqq: self.ptwebqq,
-                vfwebqq: self.vfwebqq,
-                uin: ret.result.uin,
-                psessionid: ret.result.psessionid
-            };
-            self.startPoll(self.auth_options);
-            callback(client.get_cookies(), self.auth_options);
-        }
-        else {
-            log.info("登录失败");
-            return log.error(ret);
-        }
+            else {
+                log.info("登录失败");
+                return log.error(ret);
+            }
+        });
     });
 };
 
@@ -242,24 +270,103 @@ QQ.prototype.startPoll = function (auth_options) {
     this.loopPoll(auth_options);
 };
 
+QQ.prototype.onDisconnect = function () {
+    // fixme: 需要重新登录
+    this.stopPoll();
+    this._Login(this.cookie);
+}
+
 QQ.prototype.loopPoll = function (auth_options) {
     if (!this.toPoll) return;
     var self = this;
     this.onPoll(auth_options, function (e) {
-        if (e && e.result) {
-            var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(e.result[0].value.content[1]);
-            client.url_get(tuling, function(err, res, data) {
-                self.sendBuddyMsg(e.result[0].value.from_uin, JSON.parse(data).text, function(){
-                    log.info('回复成功');
-                });
-            })
-            
-        }
+        self._onPoll(e);
         self.loopPoll();
         // setTimeout(function(){
         //     self.loopPoll();
         // }, e ? 5000 : 0)
     })
+};
+
+QQ.prototype._onPoll = function (ret) {
+    if (!ret) return;
+    if (typeof ret === 'string') return;
+    if (ret.retcode === 102) return;
+    if (ret.retcode !== 0) {
+        return this.onDisconnect();
+    }
+
+    if (!Array.isArray(ret.result)) return;
+
+    ret.result = ret.result.sort(function (a, b) {
+        return a.value.time - b.value.time
+    });
+
+    var self = this;
+
+    async.eachSeries(ret.result, function (item, next) {
+        _.extend(item, item.value);
+        delete item.value;
+
+        // log.debug('接收消息', item);
+        if (['input_notify', 'buddies_status_change', 'system_message'].indexOf(item.poll_type) > -1) {
+            return next();
+        }
+        // if (![45, 43, 42, 9].indexOf(item.msg_type) > -1) {
+        //     log.debug('未知消息类型', item);
+        //     return next();
+        // };
+        async.waterfall([
+            function (next) {
+                if (item.group_code) {
+                    if (item.content[3]) {
+                        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
+                        client.url_get(tuling, function(err, res, info) {
+                            self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
+                                // log.info('回复'+ret.result[0].value.from_ui+'成功');
+                                log.info(ret);
+                            });
+                        });
+                    }
+                    next();
+                    // self.getGroupInfo(item.group_code, function(data) {
+                    //     // log.debug(data.code);
+                    //     // if (!data.gid === 1853079463){
+                    //     if (item.content[3]) {
+                    //         var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
+                    //         client.url_get(tuling, function(err, res, info) {
+                    //             self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
+                    //                 // log.info('回复'+ret.result[0].value.from_ui+'成功');
+                    //                 log.info(ret);
+                    //             });
+                    //         });
+                    //     }
+                    //     next();
+                    // })
+                } else if (item.did) {
+                    self.getDiscuInfo(item.did, function(e, d1) {
+                        d.discu_name = d1.info.discu_name;
+                        var c = _.find(d1.mem_info, { uin: d.send_uin });
+                        if (c) d.send_nick = c.nick;
+                        next();
+                    })
+                } else {
+                    var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[1]);
+                    client.url_get(tuling, function(err, res, info) {
+                        self.sendBuddyMsg(item.from_uin, JSON.parse(info).text, function(ret, e){
+                            // log.info('回复'+ret.result[0].value.from_ui+'成功');
+                            log.info(ret);
+                        });
+                    });
+                    next();
+                }
+            }
+        ], function (e) {
+            // log.debug(e);
+        });
+    });
+    return;
+    
 };
 
 QQ.prototype.sendBuddyMsg = function (uin, msg, cb) {
@@ -273,11 +380,104 @@ QQ.prototype.sendBuddyMsg = function (uin, msg, cb) {
             psessionid: this.auth_options.psessionid
         })
     };
-    log.debug(params);
+
     client.post({
         url: 'http://d1.web2.qq.com/channel/send_buddy_msg2'
-    }, params, function(ret, e) {
-        console.log(ret);
+    }, params, function(ret) {
+        cb(ret);
+    });
+};
+
+QQ.prototype.sendGroupMsg = function (uin, msg, cb) {
+    var params = {
+        r: JSON.stringify({
+            group_uin: uin,
+            content: JSON.stringify(['' + msg, ['font', font]]),
+            clientid: clientid,
+            msg_id: nextMsgId(),
+            psessionid: this.auth_options.psessionid
+        })
+    };
+
+    client.post({
+        url: 'http://d1.web2.qq.com/channel/send_qun_msg2'
+    }, params, function(ret) {
+        cb(ret);
+    });
+};
+
+QQ.prototype.getGroupCode = function (code, cb) {
+    if (this.group_code[code]) {
+        return cb(this.group_code[code]);
+    }
+    var self = this;
+    var params = {
+        r: JSON.stringify({
+            vfwebqq: this.auth_options.vfwebqq,
+            hash: hashU(this.auth_options.uin, this.auth_options.ptwebqq)
+        })
+    };
+
+    client.post({
+        url: 'http://s.web2.qq.com/api/get_group_name_list_mask2'
+    }, params, function (ret) {
+        var data = ret.result.gnamelist;
+        for (var i in data) {
+            var item  = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
+            self.group_code[data[i].gid] = item;
+        }
+        cb(self.group_code[code]);
+    });
+};
+
+QQ.prototype.getGroupInfo = function (code, cb) {
+    var self = this;
+    this.getGroupCode(code, cb);
+    // self.getGroupCode(code, function (gcode) {
+    //     if (self.groups[gcode]) {
+    //         return cb(null, self.groups[gcode]);
+    //     }
+    //     var options = {
+    //         method: 'GET',
+    //         protocol: 'http:',
+    //         host: 's.web2.qq.com',
+    //         path: '/api/get_group_info_ext2?gcode=' + gcode + '&vfwebqq=' + this.auth_options.vfwebqq + '&t=' + Date.now(),
+    //         headers: {
+    //             'Referer': 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1',
+    //         }
+    //     };
+
+    //     client.url_get(options, function (err, res, data) {
+    //         data = data.result;
+    //         data.mcount = data.minfo.length;
+    //         data = _.pick(data, ['cards', 'ginfo', 'minfo', 'mcount']);
+    //         self.groups[gcode] = data;
+    //         cb(err, data);
+    //     });
+    // });
+};
+
+QQ.prototype.getDiscuInfo = function (did, cb) {
+    if (this.discus[did]) {
+        return cb(null, this.discus[did]);
+    }
+    var self = this;
+    var options = {
+        method: 'GET',
+        protocol: 'http:',
+        host: 'd.web2.qq.com',
+        path: '/channel/get_discu_info?did=' + did + '&vfwebqq=' + this.auth_options.vfwebqq + '&clientid=' + clientid + '&t=' + Date.now(),
+        headers: {
+            'Referer': 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2',
+        }
+    };
+
+    client.url_get(options, function (err, res, data) {
+        data = data.result
+        data.mcount = data.mem_info.length
+        data = _.pick(data, ['info', 'mem_info', 'mcount'])
+        self.discus[did] = data
+        cb(err, data)
     });
 };
 
@@ -287,6 +487,7 @@ QQ.prototype.Robot = function (callback) {
     fs.exists('./cookie.data', function (isExist) {
         if (isExist) {
             fs.readFile('./cookie.data', 'utf8', function (err, data){
+                self.cookie = data;
                 self._Login(data, callback);
             });
         }
