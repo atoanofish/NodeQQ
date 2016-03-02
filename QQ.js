@@ -57,6 +57,7 @@ var QQ = module.exports = function () {
     this.groups = {};
     this.group_code = {};
     this.discus = {};
+    this.nickname = '';
 };
 
 QQ.prototype.getPtwebqq = function (url, cb) {
@@ -113,7 +114,7 @@ QQ.prototype.waitingScan = function (callback) {
         var retCode = parseInt(ret[0]);
         if (retCode === 0 && ret[2].match(/^http/)) {
             require('child_process').exec('rm -rf ./code.png');
-
+            self.nickname = ret[5];
             log.info("登录 step2 cookie 获取 ptwebqq");
             self.getPtwebqq(ret[2], function (ret) {
                 self.ptwebqq = client.get_cookies().filter(function (item) {
@@ -136,6 +137,12 @@ QQ.prototype.waitingScan = function (callback) {
                                     psessionid: ret.result.psessionid
                                 };
                                 callback(client.get_cookies(), self.auth_options);
+                                self.getSelfInfo(function (ret) {
+                                    if (ret.retcode === 0) {
+                                        self.nickname = ret.result.nick;
+                                    }
+                                    log.info(self.nickname);
+                                });
                             }
                             else {
                                 log.info("登录失败");
@@ -230,6 +237,11 @@ QQ.prototype._Login = function (cookie, callback) {
                 };
                 self.startPoll(self.auth_options);
                 callback(client.get_cookies(), self.auth_options);
+                self.getSelfInfo(function (ret) {
+                    if (ret.retcode === 0) {
+                        self.nickname = ret.result.nick;
+                    }
+                });
             }
             else {
                 log.info("登录失败");
@@ -319,7 +331,7 @@ QQ.prototype._onPoll = function (ret) {
         async.waterfall([
             function (next) {
                 if (item.group_code) {
-                    if (item.content[1] === '@robot' && item.content[3]) {
+                    if (item.content[1] === '@' + self.nickname && item.content[3]) {
                         var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
                         client.url_get(tuling, function(err, res, info) {
                             self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
@@ -478,6 +490,14 @@ QQ.prototype.getDiscuInfo = function (did, cb) {
         data = _.pick(data, ['info', 'mem_info', 'mcount'])
         self.discus[did] = data
         cb(err, data)
+    });
+};
+
+QQ.prototype.getSelfInfo = function (cb) {
+    var self = this;
+    var url = 'http://s.web2.qq.com/api/get_self_info2?t=' + Date.now();
+    client.get(url, function (ret) {
+        cb(ret);
     });
 };
 
