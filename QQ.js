@@ -15,6 +15,8 @@ var font = {
   'style': [0, 0, 0],
   'color':  '000000'
 }
+var codeMap = [14,1,2,3,4,5,6,7,8,9,10,11,12,13,0,50,51,96,53,54,73,74,75,76,77,78,55,56,57,58,79,80,81,82,83,84,85,86,87,88,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,32,113,114,115,63,64,59,33,34,116,36,37,38,91,92,93,29,117,72,45,42,39,62,46,47,71,95,118,119,120,121,122,123,124,27,21,23,25,26,125,126,127,
+128,129,130,131,132,133,134,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170]
 
 var z = 0;
 var q = Date.now();
@@ -399,14 +401,15 @@ QQ.prototype.sendBuddyMsg = function (uin, msg, cb) {
     var params = {
         r: JSON.stringify({
             to: uin,
-            face: 147,
-            content: JSON.stringify(['' + msg, ['font', font]]),
+            face: 522,
+            content: this.getFaceContent(msg),
             clientid: clientid,
             msg_id: nextMsgId(),
             psessionid: this.auth_options.psessionid
         })
     };
-
+    log.debug(params);
+    // return;
     client.post({
         url: 'http://d1.web2.qq.com/channel/send_buddy_msg2'
     }, params, function(ret) {
@@ -418,7 +421,7 @@ QQ.prototype.sendGroupMsg = function (uin, msg, cb) {
     var params = {
         r: JSON.stringify({
             group_uin: uin,
-            content: JSON.stringify(['' + msg, ['font', font]]),
+            content: this.getFaceContent(msg),
             clientid: clientid,
             msg_id: nextMsgId(),
             psessionid: this.auth_options.psessionid
@@ -514,6 +517,17 @@ QQ.prototype.getSelfInfo = function (cb) {
         cb(ret);
     });
 };
+
+QQ.prototype.getFaceContent = function (msg) {
+    var content;
+    if (Math.random() > 0.5) {
+        content = JSON.stringify(['' + msg, ['face', Math.floor(Math.random() * codeMap.length)], ['font', font]]);
+    }
+    else {
+        content = JSON.stringify(['' + msg, ['font', font]]);
+    }
+    return content;
+}
 
 QQ.prototype.Robot = function (callback) {
     var self = this;
