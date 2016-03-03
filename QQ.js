@@ -142,6 +142,7 @@ QQ.prototype.waitingScan = function (callback) {
                                         self.nickname = ret.result.nick;
                                     }
                                     log.info(self.nickname);
+                                    self.startPoll(self.auth_options);
                                 });
                             }
                             else {
@@ -235,8 +236,8 @@ QQ.prototype._Login = function (cookie, callback) {
                     uin: ret.result.uin,
                     psessionid: ret.result.psessionid
                 };
+                // callback(client.get_cookies(), self.auth_options);
                 self.startPoll(self.auth_options);
-                callback(client.get_cookies(), self.auth_options);
                 self.getSelfInfo(function (ret) {
                     if (ret.retcode === 0) {
                         self.nickname = ret.result.nick;
@@ -304,10 +305,14 @@ QQ.prototype._onPoll = function (ret) {
     if (!ret) return;
     if (typeof ret === 'string') return;
     if (ret.retcode === 102) return;
-    if (ret.retcode !== 0) {
+    if (ret.retcode === 103) {
+        log.info('请先登录一下WebQQ!');
+        this.toPoll = false;
+        return;
+    }
+    if (ret.retcode != 0) {
         return this.onDisconnect();
     }
-
     if (!Array.isArray(ret.result)) return;
 
     ret.result = ret.result.sort(function (a, b) {
@@ -331,12 +336,21 @@ QQ.prototype._onPoll = function (ret) {
         async.waterfall([
             function (next) {
                 if (item.group_code) {
-                    if (item.content[1] === '@' + self.nickname && item.content[3]) {
-                        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
+                    var isAt = item.content.indexOf('@' + self.nickname);
+                    if (isAt > -1) {
+                        var val = '';
+                        if (isAt === 1) {
+                            val = item.content[3];
+                        }
+                        else {
+                            val = item.content[1] + item.content[4];
+                        }
+                        
+                        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(val.trim());
                         client.url_get(tuling, function(err, res, info) {
                             self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
                                 // log.info('回复'+ret.result[0].value.from_ui+'成功');
-                                log.info(ret);
+                                // log.info(ret);
                             });
                         });
                     }
