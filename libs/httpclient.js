@@ -6,6 +6,16 @@ var URL = require('url');
 
 var all_cookies = [];
 
+var z = 0;
+var q = Date.now();
+q = (q - q % 1E3) / 1E3;
+q = q % 1E4 * 1E4;
+
+var nextMsgId = function () {
+    z++;
+    return q + z;
+}
+
 var get_cookies = function() {
     return all_cookies;
 };
@@ -211,4 +221,5 @@ module.exports = {
     post: http_post,
     url_get: url_get,
     url_post: url_post,
+    nextMsgId: nextMsgId
 };

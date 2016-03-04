@@ -427,7 +427,7 @@ QQ.prototype.sendGroupMsg = function (uin, msg, cb) {
             psessionid: this.auth_options.psessionid
         })
     };
-
+    log.debug(params);
     client.post({
         url: 'http://d1.web2.qq.com/channel/send_qun_msg2'
     }, params, function(ret) {
