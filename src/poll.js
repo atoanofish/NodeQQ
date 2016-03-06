@@ -9,6 +9,7 @@ var login = require('./login');
 var group = require('./group');
 var buddy = require('./buddy');
 var info = require('./info');
+var wodi = require('../plugin/wodi');
 
 var toPoll = false;
 
@@ -30,11 +31,11 @@ exports.onPoll = function (aaa, cb) {
 };
 
 exports.stopPoll = function () {
-    this.toPoll = false;
+    toPoll = false;
 };
 
 exports.startPoll = function () {
-    this.toPoll = true;
+    toPoll = true;
     log.debug('polling...');
     var self = this;
     if (!global.auth_options.nickname) {
@@ -58,7 +59,7 @@ exports.onDisconnect = function () {
 }
 
 exports.loopPoll = function (auth_options) {
-    if (!this.toPoll) return;
+    if (!toPoll) return;
     var self = this;
     this.onPoll(auth_options, function (e) {
         self._onPoll(e);
@@ -75,7 +76,7 @@ exports._onPoll = function (ret) {
     if (ret.retcode === 102) return;
     if (ret.retcode === 103) {
         log.info('请先登录一下WebQQ!');
-        this.toPoll = false;
+        toPoll = false;
         return;
     }
     if (ret.retcode != 0) {
@@ -93,50 +94,15 @@ exports._onPoll = function (ret) {
         _.extend(item, item.value);
         delete item.value;
 
-        // log.debug('接收消息', item);
         if (['input_notify', 'buddies_status_change', 'system_message'].indexOf(item.poll_type) > -1) {
             return next();
         }
-        // if (![45, 43, 42, 9].indexOf(item.msg_type) > -1) {
-        //     log.debug('未知消息类型', item);
-        //     return next();
-        // };
+
         async.waterfall([
             function (next) {
                 if (item.group_code) {
-                    var isAt = item.content.indexOf('@' + global.auth_options.nickname);
-                    if (isAt > -1) {
-                        var val = '';
-                        if (isAt === 1) {
-                            val = item.content[3];
-                        }
-                        else {
-                            val = item.content[1] + item.content[4];
-                        }
-                        
-                        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(val.trim());
-                        client.url_get(tuling, function(err, res, info) {
-                            group.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
-                                // log.info('回复'+ret.result[0].value.from_ui+'成功');
-                                // log.info(ret);
-                            });
-                        });
-                    }
+                    group.groupHandle(item);
                     next();
-                    // self.getGroupInfo(item.group_code, function(data) {
-                    //     // log.debug(data.code);
-                    //     // if (!data.gid === 1853079463){
-                    //     if (item.content[3]) {
-                    //         var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[3]);
-                    //         client.url_get(tuling, function(err, res, info) {
-                    //             self.sendGroupMsg(item.group_code, JSON.parse(info).text, function(ret, e){
-                    //                 // log.info('回复'+ret.result[0].value.from_ui+'成功');
-                    //                 log.info(ret);
-                    //             });
-                    //         });
-                    //     }
-                    //     next();
-                    // })
                 } else if (item.did) {
                     // self.getDiscuInfo(item.did, function(e, d1) {
                     //     d.discu_name = d1.info.discu_name;
@@ -148,7 +114,6 @@ exports._onPoll = function (ret) {
                     var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[1]);
                     client.url_get(tuling, function(err, res, info) {
                         buddy.sendBuddyMsg(item.from_uin, JSON.parse(info).text, function(ret, e){
-                            // log.info('回复'+ret.result[0].value.from_ui+'成功');
                             log.info(ret);
                         });
                     });
@@ -160,5 +125,4 @@ exports._onPoll = function (ret) {
         });
     });
     return;
-    
 };
