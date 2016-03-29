@@ -12,6 +12,9 @@
     node app.js
 ```
 
+##Bounds
+*   如果使用后台挂机模式，可以npm安装forever包
+
 ##TODO
 *  发送表情
 *  群成员私聊
