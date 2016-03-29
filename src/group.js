@@ -104,12 +104,12 @@ exports.groupHandle = function (msg) {
         // else if (val.match('退出谁是卧底')){
         //     isWodi = false;
         // }
-        else {
-            var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(val.trim());
-            client.url_get(tuling, function(err, res, info) {
-                self.sendGroupMsg(msg.group_code, JSON.parse(info).text);
-            });
-        }
+        // else {
+        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(val.trim());
+        client.url_get(tuling, function(err, res, info) {
+            self.sendGroupMsg(msg.group_code, JSON.parse(info).text);
+        });
+        // }
         
     }
 }

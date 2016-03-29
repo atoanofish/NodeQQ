@@ -9,7 +9,6 @@ var login = require('./login');
 var group = require('./group');
 var buddy = require('./buddy');
 var info = require('./info');
-var wodi = require('../plugin/wodi');
 
 var toPoll = false;
 
