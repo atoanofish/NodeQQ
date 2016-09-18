@@ -4,7 +4,7 @@ const tuling = require('./tuling');
 
 const regAtName = new RegExp(`@{global.auth_options.nickname}`);
 
-function sendMsg(uin, msg, cb) {
+function sendMsg(uin, msg, callback) {
     var params = {
         r: JSON.stringify({
             did: uin,
@@ -19,8 +19,7 @@ function sendMsg(uin, msg, cb) {
     client.post({
         url: 'http://d1.web2.qq.com/channel/send_discu_msg2'
     }, params, function (ret) {
-        console.log(`Discuss POST INFO: ${JSON.stringify(ret)}`);
-        cb && cb(ret);
+        callback && callback(ret);
     });
 };
 
@@ -45,8 +44,6 @@ function getDiscussInfo(code, cb) {
 };
 
 function Handle(msg) {
-    var isAt = msg.content[1].indexOf('@' + global.auth_options.nickname);
-    console.log(msg.content[1], isAt);
     if (isAt > -1) {
         var val = msg.content[1].replace(regAtName, '');
         tuling.getMsg(val.trim(), str => sendMsg(msg.did, str));
