@@ -1,5 +1,6 @@
-var qqface = require('./qqface');
-var client = require('../libs/httpclient');
+const qqface = require('./qqface');
+const client = require('../libs/httpclient');
+const tuling = require('./tuling');
 
 var isWodi = false;
 
@@ -7,7 +8,7 @@ function hashU(x, K) {
     x += "";
     for (var N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
     var U = ["EC", "OK"],
-    V = [];
+        V = [];
     V[0] = x >> 24 & 255 ^ U[0].charCodeAt(0);
     V[1] = x >> 16 & 255 ^ U[0].charCodeAt(1);
     V[2] = x >> 8 & 255 ^ U[1].charCodeAt(0);
@@ -23,7 +24,7 @@ function hashU(x, K) {
     return V;
 };
 
-exports.sendGroupMsg = function (uin, msg, cb) {
+function sendMsg(uin, msg, cb) {
     var params = {
         r: JSON.stringify({
             group_uin: uin,
@@ -36,12 +37,12 @@ exports.sendGroupMsg = function (uin, msg, cb) {
 
     client.post({
         url: 'http://d1.web2.qq.com/channel/send_qun_msg2'
-    }, params, function(ret) {
+    }, params, function (ret) {
         cb && cb(ret);
     });
 };
 
-exports.getGroupCode = function (code, cb) {
+function getGroupCode(code, cb) {
     if (this.group_code[code]) {
         return cb(this.group_code[code]);
     }
@@ -58,14 +59,14 @@ exports.getGroupCode = function (code, cb) {
     }, params, function (ret) {
         var data = ret.result.gnamelist;
         for (var i in data) {
-            var item  = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
+            var item = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
             self.group_code[data[i].gid] = item;
         }
         cb(self.group_code[code]);
     });
 };
 
-exports.getGroupInfo = function (code, cb) {
+function getGroupInfo(code, cb) {
     var self = this;
     var options = {
         method: 'GET',
@@ -86,30 +87,20 @@ exports.getGroupInfo = function (code, cb) {
     });
 };
 
-exports.groupHandle = function (msg) {
-    var self = this;
+function Handle(msg) {
     var isAt = msg.content.indexOf('@' + global.auth_options.nickname);
     if (isAt > -1) {
         var val = '';
-        if (isAt === 1) {
+        if (isAt == 0) {
             val = msg.content[3];
-        }
-        else {
+        } else {
             val = msg.content[1] + msg.content[4];
         }
 
-        // if (val.match('开始谁是卧底(.+?)人局') && !isNaN(val.match('开始谁是卧底(.+?)人局')[1])){
-        //     isWodi = true;
-        // }
-        // else if (val.match('退出谁是卧底')){
-        //     isWodi = false;
-        // }
-        // else {
-        var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(val.trim());
-        client.url_get(tuling, function(err, res, info) {
-            self.sendGroupMsg(msg.group_code, JSON.parse(info).text);
-        });
-        // }
-        
+        tuling.getMsg(val.trim(), str => sendMsg(msg.group_code, str));
     }
+}
+
+module.exports = {
+    handle: Handle
 }

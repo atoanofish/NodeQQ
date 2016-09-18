@@ -1,8 +1,8 @@
-var fs = require('fs');
+const fs = require('fs');
 
-var QQ = require('./src/QQ');
+const QQ = require('./src/QQ');
 
-var qq = new QQ();
+let qq = new QQ();
 
 qq.Login(function(a){
     console.log(global.auth_options);

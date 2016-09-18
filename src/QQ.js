@@ -1,8 +1,7 @@
-var fs = require('fs');
+const fs = require('fs');
 
-
-var login = require('./login');
-var poll = require('./poll');
+const login = require('./login');
+const poll = require('./poll');
 
 global.appid = 501004106;
 global.clientid  = 53999199;

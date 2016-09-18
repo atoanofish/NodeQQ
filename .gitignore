@@ -1,3 +1,13 @@
-node_modules/
-cookie.data
-code.png
+# Vscode config
+/.vscode
+/jsconfig.json
+
+# Typings
+/typings
+
+# Nodejs package
+/node_modules
+
+# Workspace tempdata
+/cookie.data
+/code.png
