@@ -24,8 +24,8 @@ let server = http.createServer((request, response) => {
                 fs.createReadStream(filePath).pipe(response);
                 // cannot find file, but received index request
             } else {
-                response.writeHead(404, { 'content-Type': 'text/html' });
-                response.end('404NotFound');
+                response.writeHead(200, { 'content-Type': 'text/html' });
+                response.end('Nothing Here :(');
             }
         });
     }
