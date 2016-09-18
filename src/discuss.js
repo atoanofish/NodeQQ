@@ -44,6 +44,7 @@ function getDiscussInfo(code, cb) {
 };
 
 function Handle(msg) {
+    var isAt = msg.content[1].indexOf('@' + global.auth_options.nickname);
     if (isAt > -1) {
         var val = msg.content[1].replace(regAtName, '');
         tuling.getMsg(val.trim(), str => sendMsg(msg.did, str));
