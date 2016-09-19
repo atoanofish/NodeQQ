@@ -4,7 +4,7 @@
   "description": "Simple QQ Robot. Supports privite, disscus and group chating.",
   "main": "app.js",
   "engines": {
-    "node": "6.6.0"
+    "node": "^6.3.0"
   },
   "scripts": {
     "start": "node app.js"
