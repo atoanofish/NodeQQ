@@ -96,14 +96,14 @@ function _onPoll(ret) {
                         discuss.handle(item);
                         next();
                     } else {
-                        // buddy.handle(item);
+                        buddy.handle(item);
                         next();
                     }
                 }
             ]
             /*, (err, result) => {
                         log.info(result);
-                    }*/
+            }*/
         );
     });
     return;

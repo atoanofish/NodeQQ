@@ -9,6 +9,5 @@
 /node_modules
 
 # Workspace tempdata
-/cookie.data
 /code.png
 /npm-debug.log
