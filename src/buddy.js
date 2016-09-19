@@ -1,4 +1,4 @@
-const qqface = require('./qqface');
+const msgcontent = require('./msgcontent');
 const client = require('../libs/httpclient');
 const tuling = require('./tuling');
 
@@ -7,7 +7,7 @@ function sendMsg(uin, msg, callback) {
         r: JSON.stringify({
             to: uin,
             face: 522,
-            content: qqface.getFaceContent(msg),
+            content: msgcontent.bulid(msg),
             clientid: global.clientid,
             msg_id: client.nextMsgId(),
             psessionid: global.auth_options.psessionid
