@@ -1,13 +1,15 @@
-const qqface = require('./qqface');
+const msgcontent = require('./msgcontent');
 const client = require('../libs/httpclient');
 const tuling = require('./tuling');
+const _ =require('lodash');
 
-var isWodi = false;
+let isWodi = false;
+let group_code = new Array();
 
 function hashU(x, K) {
     x += "";
-    for (var N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
-    var U = ["EC", "OK"],
+    for (let N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
+    let U = ["EC", "OK"],
         V = [];
     V[0] = x >> 24 & 255 ^ U[0].charCodeAt(0);
     V[1] = x >> 16 & 255 ^ U[0].charCodeAt(1);
@@ -25,10 +27,10 @@ function hashU(x, K) {
 };
 
 function sendMsg(uin, msg, cb) {
-    var params = {
+    let params = {
         r: JSON.stringify({
             group_uin: uin,
-            content: qqface.getFaceContent(msg),
+            content: msgcontent.bulid(msg),
             clientid: clientid,
             msg_id: client.nextMsgId(),
             psessionid: global.auth_options.psessionid
@@ -43,36 +45,35 @@ function sendMsg(uin, msg, cb) {
 };
 
 function getGroupCode(code, cb) {
-    if (this.group_code[code]) {
-        return cb(this.group_code[code]);
+    if (group_code[code]) {
+        return cb(group_code[code]);
     }
-    var self = this;
-    var params = {
+    let params = {
         r: JSON.stringify({
-            vfwebqq: this.auth_options.vfwebqq,
-            hash: hashU(this.auth_options.uin, this.auth_options.ptwebqq)
+            vfwebqq: global.auth_options.vfwebqq,
+            hash: hashU(global.auth_options.uin, global.auth_options.ptwebqq)
         })
     };
 
     client.post({
         url: 'http://s.web2.qq.com/api/get_group_name_list_mask2'
     }, params, function (ret) {
-        var data = ret.result.gnamelist;
-        for (var i in data) {
-            var item = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
-            self.group_code[data[i].gid] = item;
+        let data = ret.result.gnamelist;
+        for (let i in data) {
+            let item = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
+            group_code[data[i].gid] = item;
         }
-        cb(self.group_code[code]);
+        cb && cb(group_code[code]);
     });
 };
 
 function getGroupInfo(code, cb) {
-    var self = this;
-    var options = {
+    let self = this;
+    let options = {
         method: 'GET',
         protocol: 'http:',
         host: 's.web2.qq.com',
-        path: '/api/get_group_info_ext2?gcode=' + code + '&vfwebqq=' + this.auth_options.vfwebqq + '&t=' + Date.now(),
+        path: '/api/get_group_info_ext2?gcode=' + code + '&vfwebqq=' + global.auth_options.vfwebqq + '&t=' + Date.now(),
         headers: {
             'Referer': 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1',
         }
@@ -83,14 +84,14 @@ function getGroupInfo(code, cb) {
         data.mcount = data.minfo.length;
         data = _.pick(data, ['cards', 'ginfo', 'minfo', 'mcount']);
         self.groups[code] = data;
-        cb(err, data);
+        cb && cb(err, data);
     });
 };
 
 function Handle(msg) {
-    var isAt = msg.content.indexOf('@' + global.auth_options.nickname);
+    let isAt = msg.content.indexOf('@' + global.auth_options.nickname);
     if (isAt > -1) {
-        var val = '';
+        let val = '';
         if (isAt == 0) {
             val = msg.content[3];
         } else {
@@ -102,5 +103,7 @@ function Handle(msg) {
 }
 
 module.exports = {
-    handle: Handle
+    handle: Handle,
+    getCode: getGroupCode,
+    getInfo: getGroupInfo
 }

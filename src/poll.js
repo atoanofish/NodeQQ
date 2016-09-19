@@ -43,6 +43,7 @@ function startPoll() {
 };
 
 function onDisconnect() {
+    log.info(`Disconnect.`);
     // fixme: 需要重新登录
     stopPoll();
     login._Login(client.get_cookies_string(), function () {
@@ -89,6 +90,7 @@ function _onPoll(ret) {
 
         async.waterfall([
                 next => {
+                    console.log(`MSG_RECV: ${JSON.stringify(item)}`);
                     if (item.group_code) {
                         group.handle(item);
                         next();
@@ -96,14 +98,14 @@ function _onPoll(ret) {
                         discuss.handle(item);
                         next();
                     } else {
-                        // buddy.handle(item);
+                        buddy.handle(item);
                         next();
                     }
                 }
             ]
             /*, (err, result) => {
                         log.info(result);
-                    }*/
+            }*/
         );
     });
     return;

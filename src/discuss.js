@@ -1,6 +1,7 @@
-const qqface = require('./qqface');
+const msgcontent = require('./msgcontent');
 const client = require('../libs/httpclient');
 const tuling = require('./tuling');
+const _ = require('lodash');
 
 const regAtName = new RegExp(`@{global.auth_options.nickname}`);
 
@@ -8,7 +9,7 @@ function sendMsg(uin, msg, callback) {
     var params = {
         r: JSON.stringify({
             did: uin,
-            content: qqface.getFaceContent(msg),
+            content: msgcontent.bulid(msg),
             face: 537,
             clientid: clientid,
             msg_id: client.nextMsgId(),
