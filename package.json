@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "description": "Simple QQ Robot. Supports privite, disscus and group chating.",
   "main": "app.js",
-  "engines": {
-    "node": "^6.3.0"
-  },
   "scripts": {
     "start": "node app.js"
   },
