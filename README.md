@@ -1,22 +1,20 @@
-##NodeQQ
-基于SmartQQ协议的QQ机器人。
+# qq-bot
+基于 SmartQQ 协议和 Node.js 的 QQ 机器人。
 
-##Features
-*   二维码登录
-*   自动登录，无需扫描二维码(cookie)
-*   支持好友，群，讨论组的接入
+## Features
+*   扫描码登录
+*   使用 Cookie 自动登录，无需扫描二维码
+*   支持私聊，群聊，讨论组
 
-##Get Start
+## Get Started
 ``` bash
-    npm install --save
-    node app.js
+    npm install
+    npm start
 ```
 
-##Bounds
-*   如果使用后台挂机模式，可以npm安装forever包
+## Bounds
+*   如果使用后台挂机模式，可以 `npm` 安装 `forever` 包
 
-##TODO
-*  发送表情
-*  群成员私聊
-*  保存群调戏记录
-*  实现谁是卧底小游戏
+## TODO
+- [ ] 临时会话
+- [ ] 保存群~~调戏~~聊天记录

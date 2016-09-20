@@ -1,19 +1,18 @@
-var async = require('async');
-var Log = require('log');
-var _ = require('lodash');
-var log = new Log('debug');
-
-var client = require('../libs/httpclient');
-
-var login = require('./login');
-var group = require('./group');
-var buddy = require('./buddy');
-var info = require('./info');
+const async = require('async');
+const Log = require('log');
+const log = new Log('debug');
+const _ = require('lodash');
+const client = require('../libs/httpclient');
+const login = require('./login');
+const group = require('./group');
+const buddy = require('./buddy');
+const discuss = require('./discuss');
+const info = require('./info');
 
 var toPoll = false;
 
-exports.onPoll = function (aaa, cb) {
-    var params = {
+function onPoll(aaa, cb) {
+    let params = {
         r: JSON.stringify({
             ptwebqq: global.auth_options.ptwebqq,
             clientid: global.auth_options.clientid,
@@ -24,52 +23,46 @@ exports.onPoll = function (aaa, cb) {
     client.post({
         url: "http://d1.web2.qq.com/channel/poll2",
         timeout: 65000
-    }, params, function(ret, e) {
+    }, params, function (ret, e) {
         cb(ret);
     });
 };
 
-exports.stopPoll = function () {
+function stopPoll() {
     toPoll = false;
 };
 
-exports.startPoll = function () {
+function startPoll() {
     toPoll = true;
-    log.debug('polling...');
-    var self = this;
+    log.info('polling...');
     if (!global.auth_options.nickname) {
-        info.getSelfInfo(function(){ 
-            self.loopPoll(auth_options);
-        })
+        info.getSelfInfo(() => loopPoll(auth_options))
+    } else {
+        loopPoll(auth_options);
     }
-    else {
-        self.loopPoll(auth_options);
-    }
-    
 };
 
-exports.onDisconnect = function () {
+function onDisconnect() {
+    log.info(`Disconnect.`);
     // fixme: 需要重新登录
-    var self = this;
-    this.stopPoll();
-    login._Login(client.get_cookies_string(), function(){
-        self.startPoll();
+    stopPoll();
+    login._Login(client.get_cookies_string(), function () {
+        startPoll();
     });
 }
 
-exports.loopPoll = function (auth_options) {
+function loopPoll(auth_options) {
     if (!toPoll) return;
-    var self = this;
-    this.onPoll(auth_options, function (e) {
-        self._onPoll(e);
-        self.loopPoll();
+    onPoll(auth_options, function (e) {
+        _onPoll(e);
+        loopPoll();
         // setTimeout(function(){
-        //     self.loopPoll();
+        //     loopPoll();
         // }, e ? 5000 : 0)
     })
 };
 
-exports._onPoll = function (ret) {
+function _onPoll(ret) {
     if (!ret) return;
     if (typeof ret === 'string') return;
     if (ret.retcode === 102) return;
@@ -79,15 +72,13 @@ exports._onPoll = function (ret) {
         return;
     }
     if (ret.retcode != 0) {
-        return this.onDisconnect();
+        return onDisconnect();
     }
     if (!Array.isArray(ret.result)) return;
 
     ret.result = ret.result.sort(function (a, b) {
         return a.value.time - b.value.time
     });
-
-    var self = this;
 
     async.eachSeries(ret.result, function (item, next) {
         _.extend(item, item.value);
@@ -98,30 +89,33 @@ exports._onPoll = function (ret) {
         }
 
         async.waterfall([
-            function (next) {
-                if (item.group_code) {
-                    group.groupHandle(item);
-                    next();
-                } else if (item.did) {
-                    // self.getDiscuInfo(item.did, function(e, d1) {
-                    //     d.discu_name = d1.info.discu_name;
-                    //     var c = _.find(d1.mem_info, { uin: d.send_uin });
-                    //     if (c) d.send_nick = c.nick;
-                    //     next();
-                    // })
-                } else {
-                    var tuling = 'http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=' + encodeURI(item.content[1]);
-                    client.url_get(tuling, function(err, res, info) {
-                        buddy.sendBuddyMsg(item.from_uin, JSON.parse(info).text, function(ret, e){
-                            log.info(ret);
-                        });
-                    });
-                    next();
+                next => {
+                    console.log(`MSG_RECV: ${JSON.stringify(item)}`);
+                    if (item.group_code) {
+                        group.handle(item);
+                        next();
+                    } else if (item.did) {
+                        discuss.handle(item);
+                        next();
+                    } else {
+                        buddy.handle(item);
+                        next();
+                    }
                 }
-            }
-        ], function (e) {
-            // log.debug(e);
-        });
+            ]
+            /*, (err, result) => {
+                        log.info(result);
+            }*/
+        );
     });
     return;
 };
+
+module.exports = {
+    onPoll: onPoll,
+    stopPoll: stopPoll,
+    startPoll: startPoll,
+    onDisconnect: onDisconnect,
+    loopPoll: loopPoll,
+    _onPoll: _onPoll
+}
