@@ -1,3 +1,5 @@
+'use strict';
+
 var _ = require('lodash');
 var https = require("https");
 var http = require('http');

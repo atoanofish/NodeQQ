@@ -1,3 +1,5 @@
+'use strict';
+
 const async = require('async');
 const Log = require('log');
 const log = new Log('debug');
