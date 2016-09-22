@@ -3,9 +3,11 @@ const client = require('../libs/httpclient');
 const tuling = require('./tuling');
 const _ = require('lodash');
 
-let isWodi = false;
-// 储存群组名字和临时gid
-let allGroups = new Map();
+/**
+ * @type {Map}
+ * 储存所有群组信息
+ */
+let allGroups;
 
 function hashU(x, K) {
     let N, T, U, V;
@@ -28,6 +30,13 @@ function hashU(x, K) {
     return V;
 };
 
+/**
+ * 向指定uin的群组发送消息
+ * 
+ * @param {number} uin group uin
+ * @param {string} msg msg string
+ * @param {function} cb callback(httpPOSTReturn)
+ */
 function sendMsg(uin, msg, cb) {
     let params = {
         r: JSON.stringify({
@@ -46,11 +55,13 @@ function sendMsg(uin, msg, cb) {
     });
 };
 
-
 /**
- * 获取当前QQ号所有群，名称及临时 gid
+ * 获取当前QQ号所有群，名称及临时 gid !pass
+ * 
+ * @param {function} callback callback(mapAllGroups)
  */
 function getAllGroups(callback) {
+    allGroups = new Map();
     let params = {
         r: JSON.stringify({
             vfwebqq: global.auth_options.vfwebqq,
@@ -73,10 +84,9 @@ function getAllGroups(callback) {
  * 根据临时 gid 获取群详细信息 pass!
  * 
  * @param {any} gid 群组gid
- * @param {any} callback
+ * @param {function} callback
  */
 function getDetail(gid, callback) {
-    let self = this;
     let options = {
         method: 'GET',
         protocol: 'http:',
@@ -94,6 +104,11 @@ function getDetail(gid, callback) {
     });
 };
 
+/**
+ * 使用图灵机器人API处理消息
+ * 
+ * @param {Object} msg 消息对象/poll返回对象
+ */
 function Handle(msg) {
     let isAt = msg.content.indexOf('@' + global.auth_options.nickname);
     if (isAt > -1) {
@@ -106,6 +121,16 @@ function Handle(msg) {
 
         tuling.getMsg(val.trim(), str => sendMsg(msg.group_code, str));
     }
+}
+
+function getGroupName(uin, callback) {
+    if (allGroups) throw new Error('No groups or Not fetched yet.');
+    return allGroups.get(uin);
+}
+
+function getGroupUin(name, callback) {
+    if (allGroups) throw new Error('No groups or Not fetched yet.');
+    
 }
 
 module.exports = {
