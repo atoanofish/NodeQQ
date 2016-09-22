@@ -11,7 +11,7 @@ function sendMsg(uin, msg, callback) {
             did: uin,
             content: msgcontent.bulid(msg),
             face: 537,
-            clientid: clientid,
+            clientid: global.clientid,
             msg_id: client.nextMsgId(),
             psessionid: global.auth_options.psessionid
         })
