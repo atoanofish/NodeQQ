@@ -1,16 +1,18 @@
 const msgcontent = require('./msgcontent');
 const client = require('../libs/httpclient');
 const tuling = require('./tuling');
-const _ =require('lodash');
+const _ = require('lodash');
 
 let isWodi = false;
-let group_code = new Array();
+// 储存群组名字和临时gid
+let allGroups = new Map();
 
 function hashU(x, K) {
+    let N, T, U, V;
     x += "";
-    for (let N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
-    let U = ["EC", "OK"],
-        V = [];
+    for (N = [], T = 0; T < K.length; T++) N[T % 4] ^= K.charCodeAt(T);
+    U = ["EC", "OK"];
+    V = [];
     V[0] = x >> 24 & 255 ^ U[0].charCodeAt(0);
     V[1] = x >> 16 & 255 ^ U[0].charCodeAt(1);
     V[2] = x >> 8 & 255 ^ U[1].charCodeAt(0);
@@ -31,7 +33,7 @@ function sendMsg(uin, msg, cb) {
         r: JSON.stringify({
             group_uin: uin,
             content: msgcontent.bulid(msg),
-            clientid: clientid,
+            clientid: global.clientid,
             msg_id: client.nextMsgId(),
             psessionid: global.auth_options.psessionid
         })
@@ -44,10 +46,11 @@ function sendMsg(uin, msg, cb) {
     });
 };
 
-function getGroupCode(code, cb) {
-    if (group_code[code]) {
-        return cb(group_code[code]);
-    }
+
+/**
+ * 获取当前QQ号所有群，名称及临时 gid
+ */
+function getAllGroups(callback) {
     let params = {
         r: JSON.stringify({
             vfwebqq: global.auth_options.vfwebqq,
@@ -57,34 +60,37 @@ function getGroupCode(code, cb) {
 
     client.post({
         url: 'http://s.web2.qq.com/api/get_group_name_list_mask2'
-    }, params, function (ret) {
-        let data = ret.result.gnamelist;
-        for (let i in data) {
-            let item = _.pick(data[i], ['code', 'flag', 'gid', 'name']);
-            group_code[data[i].gid] = item;
-        }
-        cb && cb(group_code[code]);
+    }, params, function (response) {
+        response.result.gnamelist.forEach((e, i) => {
+            allGroups.set(e.gid, e.name);
+        });
+        console.log(allGroups);
+        callback && callback(allGroups);
     });
 };
 
-function getGroupInfo(code, cb) {
+/**
+ * 根据临时 gid 获取群详细信息 pass!
+ * 
+ * @param {any} gid 群组gid
+ * @param {any} callback
+ */
+function getDetail(gid, callback) {
     let self = this;
     let options = {
         method: 'GET',
         protocol: 'http:',
         host: 's.web2.qq.com',
-        path: '/api/get_group_info_ext2?gcode=' + code + '&vfwebqq=' + global.auth_options.vfwebqq + '&t=' + Date.now(),
+        path: '/api/get_group_info_ext2?gcode=' + gid + '&vfwebqq=' + global.auth_options.vfwebqq + '&t=' + Date.now(),
         headers: {
-            'Referer': 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1',
+            'Cookie': client.get_cookies_string(),
+            'Referer': 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1'
         }
     };
 
     client.url_get(options, function (err, res, data) {
-        data = data.result;
-        data.mcount = data.minfo.length;
-        data = _.pick(data, ['cards', 'ginfo', 'minfo', 'mcount']);
-        self.groups[code] = data;
-        cb && cb(err, data);
+        //TODO: 数据储存
+        console.log(JSON.stringify(data));
     });
 };
 
@@ -104,6 +110,6 @@ function Handle(msg) {
 
 module.exports = {
     handle: Handle,
-    getCode: getGroupCode,
-    getInfo: getGroupInfo
+    getAll: getAllGroups,
+    getDetail: getDetail
 }
