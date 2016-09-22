@@ -4,10 +4,13 @@ const tuling = require('./tuling');
 const _ = require('lodash');
 
 /**
- * @type {Map}
+ * @type {Object}
  * 储存所有群组信息
  */
-let allGroups;
+let allGroups = {
+    name: new Map(),
+    uin: new Map()
+}
 
 function hashU(x, K) {
     let N, T, U, V;
@@ -61,7 +64,6 @@ function sendMsg(uin, msg, cb) {
  * @param {function} callback callback(mapAllGroups)
  */
 function getAllGroups(callback) {
-    allGroups = new Map();
     let params = {
         r: JSON.stringify({
             vfwebqq: global.auth_options.vfwebqq,
@@ -73,9 +75,9 @@ function getAllGroups(callback) {
         url: 'http://s.web2.qq.com/api/get_group_name_list_mask2'
     }, params, function (response) {
         response.result.gnamelist.forEach((e, i) => {
-            allGroups.set(e.gid, e.name);
+            allGroups.uin.set(e.name, e.gid);
+            allGroups.name.set(e.gid, e.name);
         });
-        console.log(allGroups);
         callback && callback(allGroups);
     });
 };
@@ -86,7 +88,8 @@ function getAllGroups(callback) {
  * @param {any} gid 群组gid
  * @param {function} callback
  */
-function getDetail(gid, callback) {
+function getDetail(uin, callback) {
+    let gid = parseInt(uin);
     let options = {
         method: 'GET',
         protocol: 'http:',
@@ -100,7 +103,8 @@ function getDetail(gid, callback) {
 
     client.url_get(options, function (err, res, data) {
         //TODO: 数据储存
-        console.log(JSON.stringify(data));
+        console.log(typeof data);
+        console.log(data);
     });
 };
 
@@ -123,18 +127,36 @@ function Handle(msg) {
     }
 }
 
+/**
+ * 根据群uin获取名称
+ * 
+ * @param {any} uin
+ * @param {any} callback
+ * @returns
+ */
 function getGroupName(uin, callback) {
-    if (allGroups) throw new Error('No groups or Not fetched yet.');
-    return allGroups.get(uin);
+    let name = allGroups.name.get(uin)
+    if (callback) return callback(name);
+    else return name;
 }
 
+/**
+ * 根据群名称获取临时uin
+ * 
+ * @param {any} name
+ * @param {any} callback
+ * @returns
+ */
 function getGroupUin(name, callback) {
-    if (allGroups) throw new Error('No groups or Not fetched yet.');
-    
+    let uin = allGroups.uin.get(name)
+    if (callback) return callback(uin);
+    else return uin;
 }
 
 module.exports = {
     handle: Handle,
     getAll: getAllGroups,
-    getDetail: getDetail
+    getDetail: getDetail,
+    getName: getGroupName,
+    getUin: getGroupUin
 }
