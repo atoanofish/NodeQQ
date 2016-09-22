@@ -8,7 +8,7 @@
 
 ## Get Started
 ``` bash
-    npm install --save
+    npm install
     npm start
 ```
 
@@ -16,6 +16,5 @@
 *   如果使用后台挂机模式，可以 `npm` 安装 `forever` 包
 
 ## TODO
-- [] 发送表情
-- [] 群成员私聊
-- [] 保存群调戏记录
+- [ ] 临时会话
+- [ ] 保存群~~调戏~~聊天记录
