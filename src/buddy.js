@@ -91,6 +91,8 @@ function getFriendUin(nick, callback) {
  * @param {function} callback
  */
 function getFriendAccount(uin, callback) {
+    let account = allFriends.account.get(uin);
+    if (account) return callback && callback(account);
     let options = {
         method: 'GET',
         protocol: 'http:',
@@ -103,10 +105,10 @@ function getFriendAccount(uin, callback) {
     };
 
     client.url_get(options, function (err, res, data) {
-        if(data.account) {
+        if (data.account) {
             allFriends.account.set(uin, data.account);
-        }
-        callback && callback(data);
+            callback && callback(data.uin);
+        } else { callback && callback(data); }
     });
 }
 
