@@ -1,7 +1,6 @@
 const msgcontent = require('./msgcontent');
 const client = require('../libs/httpclient');
 const tuling = require('./tuling');
-const _ = require('lodash');
 
 /**
  * @type {Object}
@@ -74,7 +73,7 @@ function getAllGroups(callback) {
     client.post({
         url: 'http://s.web2.qq.com/api/get_group_name_list_mask2'
     }, params, function (response) {
-        response.result.gnamelist.forEach((e, i) => {
+        response.result.gnamelist.forEach(e => {
             allGroups.uin.set(e.name, e.gid);
             allGroups.name.set(e.gid, e.name);
         });
@@ -105,6 +104,7 @@ function getDetail(uin, callback) {
         //TODO: 数据储存
         console.log(typeof data);
         console.log(data);
+        callback && callback(data);
     });
 };
 

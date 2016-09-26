@@ -93,7 +93,6 @@ function waitingScan(callback) {
         if (retCode === 0 && ret[2].match(/^http/)) {
             log.info("setp1: 二维码扫描成功.");
             require('child_process').exec('rm -rf ./code.png');
-            nickname = ret[5];
             log.info("登录 step2: cookie 获取 ptwebqq");
 
             getPtwebqq(ret[2], callback);

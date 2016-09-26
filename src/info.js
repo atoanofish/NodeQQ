@@ -1,7 +1,6 @@
 const client = require('../libs/httpclient');
 
 function getSelfInfo (callback) {
-    var self = this;
     var url = 'http://s.web2.qq.com/api/get_self_info2?t=' + Date.now();
     client.get(url, function (ret) {
         if (ret.retcode === 0) {
