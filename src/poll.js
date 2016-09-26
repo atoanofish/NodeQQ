@@ -23,7 +23,7 @@ function onPoll(aaa, cb) {
     client.post({
         url: "http://d1.web2.qq.com/channel/poll2",
         timeout: 65000
-    }, params, function (ret, e) {
+    }, params, function (ret) {
         cb(ret);
     });
 };
@@ -36,9 +36,9 @@ function startPoll() {
     toPoll = true;
     log.info('polling...');
     if (!global.auth_options.nickname) {
-        info.getSelfInfo(() => loopPoll(auth_options))
+        info.getSelfInfo(() => loopPoll(global.auth_options))
     } else {
-        loopPoll(auth_options);
+        loopPoll(global.auth_options);
     }
 };
 
@@ -56,9 +56,6 @@ function loopPoll(auth_options) {
     onPoll(auth_options, function (e) {
         _onPoll(e);
         loopPoll();
-        // setTimeout(function(){
-        //     loopPoll();
-        // }, e ? 5000 : 0)
     })
 };
 
@@ -89,24 +86,23 @@ function _onPoll(ret) {
         }
 
         async.waterfall([
-                next => {
-                    console.log(`MSG_RECV: ${JSON.stringify(item)}`);
-                    if (item.group_code) {
+            next => {
+                console.log(`[New Message]: ${JSON.stringify(item)}`);
+                switch (item.poll_type) {
+                    case 'group_message':
                         group.handle(item);
-                        next();
-                    } else if (item.did) {
+                        break;
+                    case 'discu_message':
                         discuss.handle(item);
-                        next();
-                    } else {
+                        break;
+                    case 'message':
                         buddy.handle(item);
-                        next();
-                    }
+                    default:
+                        break;
                 }
-            ]
-            /*, (err, result) => {
-                        log.info(result);
-            }*/
-        );
+                next();
+            }
+        ]);
     });
     return;
 };
