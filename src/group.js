@@ -115,13 +115,11 @@ function getDetail(uin, callback) {
  */
 function Handle(msg) {
     let isAt = msg.content.indexOf('@' + global.auth_options.nickname);
-    if (isAt > -1) {
+    if (isAt >= 0) {
         let val = '';
-        if (isAt == 0) {
+        if (isAt == 1) {
             val = msg.content[3];
-        } else {
-            val = msg.content[1] + msg.content[4];
-        }
+        } else { val = msg.content[1] + msg.content[4]; }
 
         tuling.getMsg(val.trim(), str => sendMsg(msg.group_code, str));
     }
