@@ -1,41 +1,41 @@
-var _ = require('lodash');
-var https = require("https");
-var http = require('http');
-var querystring = require('querystring');
-var URL = require('url');
+const _ = require('lodash');
+const https = require("https");
+const http = require('http');
+const querystring = require('querystring');
+const URL = require('url');
 
-var all_cookies = [];
+let all_cookies = [];
 
-var z = 0;
-var q = Date.now();
+let z = 0;
+let q = Date.now();
 q = (q - q % 1E3) / 1E3;
 q = q % 1E4 * 1E4;
 
-var nextMsgId = function () {
+function nextMsgId() {
     z++;
     return q + z;
 }
 
-var get_cookies = function() {
+function get_cookies() {
     return all_cookies;
 };
 
-var get_cookies_string = function() {
-    var cookie_map = {};
+function get_cookies_string() {
+    let cookie_map = {};
     all_cookies.forEach(function (ck) {
-        var v = ck.split(' ')[0];
-        var kv = v.trim().split('=');
-        if(kv[1]!=';') cookie_map[kv[0]] = kv[1];
+        let v = ck.split(' ')[0];
+        let kv = v.trim().split('=');
+        if (kv[1] != ';') cookie_map[kv[0]] = kv[1];
     });
-    var cks = [];
-    for(var k in cookie_map) {
+    let cks = [];
+    for (let k in cookie_map) {
         cks.push(k + '=' + cookie_map[k]);
     }
     return cks.join(' ');
 };
 
-var set_cookies = function(cks) {
-    var ck = [];
+function set_cookies(cks) {
+    let ck = [];
     cks.replace('; ,', ';,').split(';,').forEach(function (item, i) {
         if (i != cks.split(';,').length - 1) item += ';';
         ck.push(item);
@@ -43,95 +43,95 @@ var set_cookies = function(cks) {
     update_cookies(ck)
 };
 
-var update_cookies = function(cks) {
+function update_cookies(cks) {
     if (cks) {
         all_cookies = _.union(all_cookies, cks);
     }
 };
 
-var global_cookies = function(cookie) {
-  if (cookie) {
-      update_cookies(cookie);
-  }
-  return get_cookies();
+function global_cookies(cookie) {
+    if (cookie) {
+        update_cookies(cookie);
+    }
+    return get_cookies();
 };
 
-var url_get = function(url_or_options, callback, pre_callback) {
-    var http_or_https = http;
+function url_get(url_or_options, callback, pre_callback) {
+    let http_or_https = http;
 
-    if( ((typeof url_or_options === 'string') && (url_or_options.indexOf('https:') === 0)) || ((typeof url_or_options === 'object') && (url_or_options.protocol === 'https:')) )
+    if (((typeof url_or_options === 'string') && (url_or_options.indexOf('https:') === 0)) || ((typeof url_or_options === 'object') && (url_or_options.protocol === 'https:')))
         http_or_https = https;
 
-    if(process.env.DEBUG) {
+    if (process.env.DEBUG) {
         console.log(url_or_options);
     }
-    return http_or_https.get(url_or_options, function(resp){
-        if(pre_callback !== undefined) pre_callback(resp);
+    return http_or_https.get(url_or_options, function (resp) {
+        if (pre_callback !== undefined) pre_callback(resp);
 
         update_cookies(resp.headers['set-cookie']);
 
-        var res = resp;
-        var body = '';
-        resp.on('data', function(chunk) {
+        let res = resp;
+        let body = '';
+        resp.on('data', function (chunk) {
             return body += chunk;
         });
-        return resp.on('end', function() {
-            if(process.env.DEBUG) {
+        return resp.on('end', function () {
+            if (process.env.DEBUG) {
                 console.log(resp.statusCode);
                 console.log(resp.headers);
                 console.log(body);
             }
             return callback(0, res, body);
         });
-    }).on("error", function(e) {
+    }).on("error", function (e) {
         return console.log(e);
     });
 };
 
-var url_post = function(options, form, callback) {
-    var http_or_https = http;
+function url_post(options, form, callback) {
+    let http_or_https = http;
 
-    if( ((typeof options === 'object') && (options.protocol === 'https:')) )
+    if (((typeof options === 'object') && (options.protocol === 'https:')))
         http_or_https = https;
 
-    var postData = querystring.stringify(form);
-    if(typeof options.headers !== 'object') options.headers = {};
+    let postData = querystring.stringify(form);
+    if (typeof options.headers !== 'object') options.headers = {};
     options.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
     options.headers['Content-Length'] = Buffer.byteLength(postData);
     options.headers['Cookie'] = get_cookies_string();
     options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:27.0) Gecko/20100101 Firefox/27.0';
-    if(process.env.DEBUG) {
+    if (process.env.DEBUG) {
         console.log(options.headers);
         console.log(postData);
     }
     if (options.timeout) {
-        http_or_https.request(options.timeout, function(){
+        http_or_https.request(options.timeout, function () {
 
         });
     }
-    var req = http_or_https.request(options, function(resp) {
-        var res = resp;
-        var body = '';
-        resp.on('data', function(chunk) {
+    let req = http_or_https.request(options, function (resp) {
+        let res = resp;
+        let body = '';
+        resp.on('data', function (chunk) {
             return body += chunk;
         });
-        return resp.on('end', function() {
-            if(process.env.DEBUG) {
+        return resp.on('end', function () {
+            if (process.env.DEBUG) {
                 console.log(resp.statusCode);
                 console.log(resp.headers);
                 console.log(body);
             }
-        return callback(0, res, body);
+            return callback(0, res, body);
         });
-    }).on("error", function(e) {
+    }).on("error", function (e) {
         return console.log(e);
     });
     req.write(postData);
     return req.end();
 };
 
-var http_request = function(options, params, callback) {
-    var append, aurl, body, client, data, query, req;
+function http_request(options, params, callback) {
+    let append, aurl, body, client, data, query, req;
     aurl = URL.parse(options.url);
     options.host = aurl.host;
     options.path = aurl.path;
@@ -150,30 +150,36 @@ var http_request = function(options, params, callback) {
     }
     options.headers['Cookie'] = get_cookies_string();
     options.headers['Referer'] = 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2';
-    //options.headers['Referer'] = 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1';
+    // options.headers['Referer'] = 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1';
     options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36';
-    if(process.env.DEBUG) {
+    if (process.env.DEBUG) {
         console.log(options);
         console.log(params);
     }
-    req = client.request(options, function(resp) {
-      if (options.debug) {
-          console.log("response: " + resp.statusCode);
-          console.log("cookie: " + resp.headers['set-cookie']);
-      }
-      resp.on('data', function(chunk) {
-          return body += chunk;
-      });
-      return resp.on('end', function() {
-          if(process.env.DEBUG) {
-              console.log(resp.statusCode);
-              console.log(resp.headers);
-              console.log(body);
-          }
-          return handle_resp_body(body, options, callback);
-      });
+    req = client.request(options, function (resp) {
+        if (options.debug) {
+            console.log("response: " + resp.statusCode);
+            console.log("cookie: " + resp.headers['set-cookie']);
+        }
+        resp.on('data', function (chunk) {
+            return body += chunk;
+        });
+        return resp.on('end', function () {
+            if (process.env.DEBUG) {
+                console.log(resp.statusCode);
+                console.log(resp.headers);
+                console.log(body);
+            }
+            try {
+                return handle_resp_body(body, options, callback);
+            } catch (err) {
+                console.log(`[HttpClient] ERR: ${err.message}, Resend request...`)
+                http_request(options, params, callback);
+                return;
+            }
+        });
     });
-    req.on("error", function(e) {
+    req.on("error", function (e) {
         return callback(null, e);
     });
     if (params && options.method === 'POST') {
@@ -182,30 +188,25 @@ var http_request = function(options, params, callback) {
     return req.end();
 };
 
-var handle_resp_body = function(body, options, callback) {
-    var ret = null;
-    try {
-        ret = JSON.parse(body);
-    } catch (err) {
-        console.log("解析出错", options.url, body);
-        return callback(null, err);
-    }
+function handle_resp_body(body, options, callback) {
+    let ret = null;
+    ret = JSON.parse(body);
     return callback(ret, null);
 };
 
-var http_get = function(url, params, callback) {
+function http_get(url, params, callback) {
     if (!callback) {
         callback = params;
         params = null;
     }
-    var options = {
+    let options = {
         method: 'GET',
         url: url
     };
     return http_request(options, params, callback);
 };
 
-var http_post = function(options, body, callback) {
+function http_post(options, body, callback) {
     options.method = 'POST';
     return http_request(options, body, callback);
 };
