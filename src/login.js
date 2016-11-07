@@ -13,7 +13,7 @@ function sleep(milliSeconds) {
     while (new Date().getTime() < startTime + milliSeconds);
 }
 
-function Login (callback) {
+function Login(callback) {
     //获取二维码
     let url = "https://ssl.ptlogin2.qq.com/ptqrshow?appid=501004106&e=0&l=M&s=5&d=72&v=4&t=" + Math.random();
     client.url_get(url, function (err, res, data) {
@@ -31,7 +31,7 @@ function Login (callback) {
     });
 };
 
-function _Login (cookie, callback) {
+function _Login(cookie, callback) {
     log.info('自动登录...');
     ptwebqq = cookie.match(/ptwebqq=(.+?);/)[1];
 
@@ -108,7 +108,7 @@ function waitingScan(callback) {
     });
 };
 
-function getPtwebqq (url, callback) {
+function getPtwebqq(url, callback) {
     client.url_get(url, function (err, res, data) {
         if (!err) {
             log.info('获取cookie & ptwebqq成功.');
@@ -148,7 +148,7 @@ function getPtwebqq (url, callback) {
     });
 };
 
-function getVfwebqq (ptwebqq, cb) {
+function getVfwebqq(ptwebqq, cb) {
     log.info('登录 step3: 获取vfwebqq');
 
     let options = {
@@ -163,12 +163,18 @@ function getVfwebqq (ptwebqq, cb) {
         }
     };
     client.url_get(options, function (err, res, data) {
-        let ret = JSON.parse(data);
+        let ret;
+        try {
+            ret = JSON.parse(data);
+        } catch (err) {
+            getVfwebqq(ptwebqq, cb);
+            return;
+        }
         cb(ret);
     });
 }
 
-function loginToken (ptwebqq, psessionid, cb) {
+function loginToken(ptwebqq, psessionid, cb) {
     if (!psessionid) psessionid = null;
     let form = {
         r: JSON.stringify({
@@ -188,7 +194,13 @@ function loginToken (ptwebqq, psessionid, cb) {
             'Referer': 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2',
         }
     }, form, function (err, res, data) {
-        let ret = JSON.parse(data);
+        let ret;
+        try {
+            ret = JSON.parse(data);
+        } catch (err) {
+            loginToken(ptwebqq, psessionid, cb);
+            return;
+        }
         cb(ret);
     });
 };
