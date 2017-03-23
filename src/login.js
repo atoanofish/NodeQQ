@@ -14,20 +14,32 @@ function sleep(milliSeconds) {
 }
 
 function Login(callback) {
-    //获取二维码
-    let url = "https://ssl.ptlogin2.qq.com/ptqrshow?appid=501004106&e=0&l=M&s=5&d=72&v=4&t=" + Math.random();
-    client.url_get(url, function (err, res, data) {
-        fs.writeFile('./code.png', data, 'binary', function (err) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log("down success");
-                require('child_process').exec('open ./code.png');
-                waitingScan(callback);
-            }
+    let options = {
+      protocol: 'https:',
+      host: 'ui.ptlogin2.qq.com',
+      path: '/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001',
+      headers: {
+          'Cookie': client.get_cookies_string(),
+          'Referer': 'http://w.qq.com/'
+      }
+    };
+
+    client.url_get(options, function () {
+        //获取二维码
+        let url = "https://ssl.ptlogin2.qq.com/ptqrshow?appid=501004106&e=0&l=M&s=5&d=72&v=4&t=" + Math.random();
+        client.url_get(url, function (err, res, data) {
+            fs.writeFile('./code.png', data, 'binary', function (err) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("down success");
+                    require('child_process').exec('open ./code.png');
+                    waitingScan(callback);
+                }
+            });
+        }, function (res) {
+            res.setEncoding('binary');
         });
-    }, function (res) {
-        res.setEncoding('binary');
     });
 };
 
@@ -68,13 +80,14 @@ function _Login(cookie, callback) {
 }
 
 function checkVcode(cb) {
+    let qrsig = client.decode_qrsig(client.get_cookie_key('qrsig'));
     let options = {
         protocol: 'https:',
         host: 'ssl.ptlogin2.qq.com',
-        path: '/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid=' + global.appid + '&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-' + (Math.random() * 900000 + 1000000) + '&mibao_css=m_webqq&t=undefined&g=1&js_type=0&js_ver=10141&login_sig=&pt_randsalt=0',
+        path: '/ptqrlogin?ptqrtoken='+qrsig+'&webqq_type=10&remember_uin=1&login2qq=1&aid=501004106&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-123332&mibao_css=m_webqq&t=undefined&g=1&js_type=0&js_ver=10141&login_sig=&pt_randsalt=0',
         headers: {
             'Cookie': client.get_cookies_string(),
-            'Referer': 'https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com/proxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001&f_qr=0'
+            'Referer': 'https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001'
         }
     };
 

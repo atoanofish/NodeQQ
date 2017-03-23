@@ -22,6 +22,22 @@ function get_cookies() {
     return all_cookies;
 };
 
+function get_cookie_key(key) {
+    var startIndex, endIndex, cookie = get_cookies_string();
+    if (cookie.length > 0) {
+        startIndex = cookie.indexOf(key + '=');
+        if (startIndex !== -1) {
+            startIndex = startIndex + key.length + 1;
+            endIndex = cookie.indexOf(';', startIndex);
+            if (endIndex === -1) {
+                endIndex = cookie.length;
+            }
+            return decodeURI(cookie.substring(startIndex, endIndex));
+        }
+    }
+    return '';
+};
+
 function get_cookies_string() {
     let cookie_map = {};
     all_cookies.forEach(function (ck) {
@@ -35,6 +51,7 @@ function get_cookies_string() {
     }
     return cks.join(' ');
 };
+
 
 function set_cookies(cks) {
     let ck = [];
@@ -56,6 +73,10 @@ function global_cookies(cookie) {
         update_cookies(cookie);
     }
     return get_cookies();
+};
+
+function decode_qrsig(t){
+  for (var e = 0, i = 0, n = t.length; n > i; ++i)e += (e << 5) + t.charCodeAt(i); return 2147483647 & e
 };
 
 function url_get(url_or_options, callback, pre_callback) {
@@ -218,7 +239,9 @@ module.exports = {
     get_cookies: get_cookies,
     set_cookies: set_cookies,
     update_cookies: update_cookies,
+    get_cookie_key: get_cookie_key,
     get_cookies_string: get_cookies_string,
+    decode_qrsig: decode_qrsig,
     request: http_request,
     get: http_get,
     post: http_post,
