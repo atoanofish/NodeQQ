@@ -8,10 +8,10 @@ const poll = require('./poll');
 global.appid = 501004106;
 global.clientid = 53999199;
 global.font = {
-    'name': '宋体',
-    'size': 10,
+    'name': '微软雅黑',
+    'size': 12,
     'style': [0, 0, 0],
-    'color': '000000'
+    'color': '333333'
 }
 
 class QQ {

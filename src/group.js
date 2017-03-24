@@ -36,7 +36,7 @@ function hashU(x, K) {
 
 /**
  * 向指定uin的群组发送消息
- * 
+ *
  * @param {number} uin group uin
  * @param {string} msg msg string
  * @param {function} cb callback(httpPOSTReturn)
@@ -61,7 +61,7 @@ function sendMsg(uin, msg, cb) {
 
 /**
  * 获取当前QQ号所有群，名称及临时 gid !pass
- * 
+ *
  * @param {function} callback callback(mapAllGroups)
  */
 function getAllGroups(callback) {
@@ -85,7 +85,7 @@ function getAllGroups(callback) {
 
 /**
  * 根据临时 gid 获取群详细信息 pass!
- * 
+ *
  * @param {any} gid 群组gid
  * @param {function} callback
  */
@@ -112,24 +112,19 @@ function getDetail(uin, callback) {
 
 /**
  * 使用图灵机器人API处理消息
- * 
+ *
  * @param {Object} msg 消息对象/poll返回对象
  */
 function Handle(msg) {
     let isAt = msg.content.indexOf('@' + global.auth_options.nickname);
-    if (isAt >= 0) {
-        let val = '';
-        if (isAt == 1) {
-            val = msg.content[3];
-        } else { val = msg.content[1] + msg.content[4]; }
-
-        tuling.getMsg(val.trim(), str => sendMsg(msg.group_code, str));
+    if (isAt > -1) {
+        tuling.getMsg(msg.content[3].trim(), str => sendMsg(msg.group_code, str));
     }
 }
 
 /**
  * 根据群uin获取名称
- * 
+ *
  * @param {any} uin
  * @param {any} callback
  * @returns
@@ -142,7 +137,7 @@ function getGroupName(uin, callback) {
 
 /**
  * 根据群名称获取临时uin
- * 
+ *
  * @param {any} name
  * @param {any} callback
  * @returns

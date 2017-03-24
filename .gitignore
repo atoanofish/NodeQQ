@@ -15,3 +15,9 @@
 
 # Heroku config
 /Procfile
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db

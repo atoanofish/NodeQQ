@@ -8,8 +8,13 @@
 
 ## Get Started
 ``` bash
-    npm install
-    npm start
+npm install
+npm start
+```
+or
+``` bash
+yarn install
+yarn start
 ```
 
 ## Bounds
