@@ -15,7 +15,7 @@ let allDiscuss = {
 
 /**
  * 向指定did的讨论组发送消息
- * 
+ *
  * @param {any} did
  * @param {any} msg
  * @param {any} callback
@@ -63,7 +63,7 @@ function getAllDiscuss(callback) {
 
 /**
  * 获取指定did讨论组的信息
- * 
+ *
  * @param {any} did
  * @param {any} cb
  */
@@ -87,20 +87,19 @@ function getDiscussInfo(did, callback) {
 
 /**
  * 用图灵机器人API响应讨论组消息
- * 
+ *
  * @param {any} msg
  */
 function Handle(msg) {
     var isAt = msg.content[1].indexOf('@' + global.auth_options.nickname);
     if (isAt > -1) {
-        var val = msg.content[1].replace(regAtName, '');
-        tuling.getMsg(val.trim(), str => sendMsg(msg.did, str));
+        tuling.getMsg(msg.content[3].trim(), str => sendMsg(msg.did, str));
     }
 }
 
 /**
  * 根据讨论组did获取名称
- * 
+ *
  * @param {any} did
  * @param {any} callback
  * @returns
@@ -113,7 +112,7 @@ function getDiscussName(did, callback) {
 
 /**
  * 根据讨论组名称获取临时did
- * 
+ *
  * @param {any} name
  * @param {any} callback
  * @returns
